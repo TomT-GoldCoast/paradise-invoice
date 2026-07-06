@@ -1,0 +1,238 @@
+body {
+  font-family: Arial, sans-serif;
+  background: #eef5ee;
+  margin: 0;
+  padding: 20px;
+}
+
+.app {
+  max-width: 1000px;
+  margin: auto;
+  background: white;
+  padding: 25px;
+  border: 3px solid #2f7d32;
+  border-radius: 14px;
+  box-shadow: 0 4px 18px rgba(0,0,0,0.15);
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  border-bottom: 4px solid #2f7d32;
+  padding-bottom: 12px;
+  margin-bottom: 14px;
+  position: relative;
+  overflow: hidden;
+}
+
+.logo {
+  width: 205px;
+  max-width: 32%;
+  height: auto;
+  z-index: 2;
+}
+
+.company-info {
+  flex: 1.2;
+  z-index: 2;
+}
+
+.company-info h1 {
+  margin: 0;
+  color: #2f7d32;
+  font-size: 36px;
+  white-space: nowrap;
+}
+
+.company-info h2 {
+  margin: 6px 0 12px;
+  color: #f07c00;
+  font-size: 22px;
+  font-weight: normal;
+}
+
+.company-info p {
+  margin: 5px 0;
+  font-size: 18px;
+}
+
+.section {
+  margin-top: 12px;
+  padding: 10px;
+  background: #f8fbf8;
+  border: 1px solid #d7e8d7;
+  border-radius: 10px;
+}
+
+h3 {
+  margin-top: 0;
+  color: #2f7d32;
+}
+
+label {
+  display: block;
+  font-weight: bold;
+  margin-top: 6px;
+  margin-bottom: 2px;
+}
+
+input,
+select,
+textarea {
+    width: 100%;
+    padding: 7px;
+    margin-top: 2px;
+    font-size: 15px;
+  box-sizing: border-box;
+  border: 1px solid #bfcdbf;
+  border-radius: 6px;
+}
+
+.row {
+  display: flex;
+  gap: 12px;
+}
+
+.row > div {
+  flex: 1;
+}
+
+.service-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
+
+.service-labels,
+.service-row {
+  display: grid;
+  grid-template-columns: 1fr 2.2fr 1.5fr 1fr;
+  gap: 10px;
+  align-items: center;
+}
+
+.service-labels {
+  margin-bottom: 8px;
+  color: #2f7d32;
+}
+
+.service-row {
+  margin-bottom: 6px;
+}
+
+.amount {
+  text-align: right;
+}
+
+.small-note {
+  color: #666;
+  font-size: 14px;
+  margin-bottom: 0;
+}
+
+.totals {
+  text-align: right;
+  font-size: 22px;
+  margin-top: 20px;
+}
+
+.totals p {
+  margin: 8px 0;
+}
+
+#total {
+  color: #2f7d32;
+  font-size: 28px;
+}
+
+.buttons {
+  text-align: right;
+  margin-top: 20px;
+}
+
+button {
+  padding: 12px 22px;
+  font-size: 16px;
+  background: #2f7d32;
+  color: white;
+  border: none;
+  border-radius: 7px;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #256428;
+}
+
+@media (max-width: 700px) {
+  body {
+    padding: 8px;
+  }
+
+  .app {
+    padding: 14px;
+  }
+
+  .header {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .logo {
+    width: 190px;
+    max-width: 80%;
+  }
+
+  .company-info h1 {
+    font-size: 30px;
+  }
+
+  .company-info h2 {
+    font-size: 19px;
+  }
+
+  .row {
+    flex-direction: column;
+  }
+
+  .service-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .service-labels {
+    display: none;
+  }
+
+  .service-row {
+    grid-template-columns: 1fr;
+    padding: 12px;
+    border: 1px solid #d7e8d7;
+    border-radius: 8px;
+    background: white;
+  }
+
+  .totals {
+    text-align: left;
+  }
+}
+
+.grass {
+  flex: 1;
+  display: flex;
+  justify-content: flex-end;
+  align-items: flex-end;
+  align-self: stretch;
+  margin-right: -8px;
+  z-index: 1;
+}
+
+.grass img {
+  width: 390px;
+  max-width: none;
+  height: auto;
+  margin-top: 70px;
+  margin-right: -18px;
+}
