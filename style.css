@@ -236,3 +236,61 @@ button:hover {
   margin-top: 70px;
   margin-right: -18px;
 }
+
+/* Paradise Lawn Maintenance Fun Animation */
+
+.yard-animation {
+  position: fixed;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: 48px;
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 9999;
+}
+
+.grass-line {
+  position: absolute;
+  bottom: 0;
+  width: 100%;
+  height: 14px;
+  background: repeating-linear-gradient(
+    90deg,
+    #2f8f2f 0px,
+    #2f8f2f 6px,
+    #3faa3f 6px,
+    #3faa3f 12px
+  );
+}
+
+.yard-worker {
+  position: absolute;
+  bottom: 12px;
+  font-size: 28px;
+  white-space: nowrap;
+  transform: translateX(-120px);
+}
+
+.mower {
+  animation: yardMove 12s linear infinite;
+}
+
+.trimmer {
+  animation: yardMove 12s linear infinite;
+  animation-delay: 4s;
+}
+
+.blower {
+  animation: yardMove 12s linear infinite;
+  animation-delay: 8s;
+}
+
+@keyframes yardMove {
+  from {
+    transform: translateX(-140px);
+  }
+  to {
+    transform: translateX(calc(100vw + 140px));
+  }
+}
