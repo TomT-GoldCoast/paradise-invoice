@@ -1,13 +1,38 @@
-let serviceRowCount = 0;
+/* Paradise Lawn Care Invoice App - Version 1.2 Development */
+
+const STORAGE_KEY = "paradise_invoices_v1_2";
+const LAST_MONTH_KEY = "pl_last_month";
+const JOB_SEQUENCE_KEY = "pl_job_sequence";
 const maxServiceRows = 20;
 const startingServiceRows = 5;
+
+let serviceRowCount = 0;
+let activeInvoiceId = null;
+
+function byId(id) {
+  return document.getElementById(id);
+}
 
 function cleanMoney(value) {
   return Number(String(value).replace(/[^0-9.]/g, "")) || 0;
 }
 
 function formatMoney(value) {
-  return "$" + value.toFixed(2);
+  return "$" + Number(value || 0).toFixed(2);
+}
+
+function getLocalDateString(date = new Date()) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function formatDisplayDate(value) {
+  if (!value) return "—";
+  const parts = value.split("-");
+  if (parts.length !== 3) return value;
+  return `${parts[1]}/${parts[2]}/${parts[0].slice(-2)}`;
 }
 
 function getMonthCode() {
@@ -19,39 +44,45 @@ function getMonthCode() {
 
 function generateJobNumber() {
   const monthCode = getMonthCode();
-  const savedMonth = localStorage.getItem("pl_last_month");
-  let sequence = Number(localStorage.getItem("pl_job_sequence")) || 0;
+  const savedMonth = localStorage.getItem(LAST_MONTH_KEY);
+  let sequence = Number(localStorage.getItem(JOB_SEQUENCE_KEY)) || 0;
 
-  if (savedMonth !== monthCode) {
-    sequence = 0;
-  }
+  if (savedMonth !== monthCode) sequence = 0;
 
-  sequence++;
+  sequence += 1;
+  localStorage.setItem(LAST_MONTH_KEY, monthCode);
+  localStorage.setItem(JOB_SEQUENCE_KEY, String(sequence));
 
-  localStorage.setItem("pl_last_month", monthCode);
-  localStorage.setItem("pl_job_sequence", sequence);
-
-  const padded = String(sequence).padStart(5, "0");
-  document.getElementById("jobNumber").value = `PL-${monthCode}-${padded}`;
+  return `PL-${monthCode}-${String(sequence).padStart(5, "0")}`;
 }
 
-function createServiceRow() {
+function getSavedInvoices() {
+  try {
+    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
+    return Array.isArray(saved) ? saved : [];
+  } catch (error) {
+    console.error("Unable to read saved invoices:", error);
+    return [];
+  }
+}
+
+function storeInvoices(invoices) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(invoices));
+}
+
+function createServiceRow(data = {}) {
   if (serviceRowCount >= maxServiceRows) {
     alert("Maximum of 20 service lines reached.");
     return;
   }
 
-  serviceRowCount++;
-
+  serviceRowCount += 1;
   const row = document.createElement("div");
   row.className = "service-row";
-
   row.innerHTML = `
-    <input type="date" class="service-date">
-
-    <input type="text" class="service-address" placeholder="Service Address">
-
-    <select class="service-select">
+    <input type="date" class="service-date" aria-label="Service date">
+    <input type="text" class="service-address" placeholder="Service Address" aria-label="Service address">
+    <select class="service-select" aria-label="Service performed">
       <option>Select</option>
       <option>Mow</option>
       <option>Weed Eat</option>
@@ -61,97 +92,357 @@ function createServiceRow() {
       <option>Debris Removal</option>
       <option>Land Clearing</option>
     </select>
-
-    <input class="amount" type="text" inputmode="decimal" placeholder="$0.00">
+    <input class="amount" type="text" inputmode="decimal" placeholder="$0.00" aria-label="Service amount">
   `;
 
-  document.getElementById("serviceRows").appendChild(row);
+  byId("serviceRows").appendChild(row);
+
+  row.querySelector(".service-date").value = data.date || "";
+  row.querySelector(".service-address").value = data.address || "";
+  row.querySelector(".service-select").value = data.service || "Select";
+  row.querySelector(".amount").value = data.amount ? formatMoney(data.amount) : "";
 
   const amountField = row.querySelector(".amount");
-
   amountField.addEventListener("input", calculateTotals);
-
-  amountField.addEventListener("blur", function () {
-    formatAmountField(amountField);
-  });
+  amountField.addEventListener("blur", () => formatAmountField(amountField));
 }
 
 function addServiceRow() {
   createServiceRow();
 }
 
-function calculateTotals() {
-  const amountFields = document.querySelectorAll(".amount");
-  let subtotal = 0;
+function resetServiceRows(rows = []) {
+  byId("serviceRows").innerHTML = "";
+  serviceRowCount = 0;
 
-  amountFields.forEach(function (field) {
+  const minimumRows = Math.max(startingServiceRows, rows.length);
+  for (let index = 0; index < minimumRows; index += 1) {
+    createServiceRow(rows[index] || {});
+  }
+}
+
+function calculateTotals() {
+  let subtotal = 0;
+  document.querySelectorAll(".amount").forEach((field) => {
     subtotal += cleanMoney(field.value);
   });
 
-  const taxRate = Number(document.getElementById("taxRate").value);
-  const paymentRate = Number(document.getElementById("paymentMethod").value);
-
+  const taxRate = Number(byId("taxRate").value);
+  const paymentRate = Number(byId("paymentMethod").value);
   const taxedTotal = subtotal + subtotal * taxRate;
   const cardFee = taxedTotal * paymentRate;
   const total = taxedTotal + cardFee;
 
-  document.getElementById("subtotal").textContent = formatMoney(subtotal);
-  document.getElementById("total").textContent = formatMoney(total);
+  byId("subtotal").textContent = formatMoney(subtotal);
+  byId("total").textContent = formatMoney(total);
+  return { subtotal, total };
 }
 
 function formatAmountField(field) {
   const value = cleanMoney(field.value);
-
-  if (value > 0) {
-    field.value = formatMoney(value);
-  } else {
-    field.value = "";
-  }
-
+  field.value = value > 0 ? formatMoney(value) : "";
   calculateTotals();
 }
 
-function resetForm() {
-  if (!confirm("Clear this invoice? Job number will not change.")) {
+function collectServiceRows() {
+  return Array.from(document.querySelectorAll(".service-row"))
+    .map((row) => ({
+      date: row.querySelector(".service-date").value,
+      address: row.querySelector(".service-address").value.trim(),
+      service: row.querySelector(".service-select").value,
+      amount: cleanMoney(row.querySelector(".amount").value)
+    }))
+    .filter((row) => row.date || row.address || row.service !== "Select" || row.amount > 0);
+}
+
+function collectInvoice() {
+  const totals = calculateTotals();
+  const paymentSelect = byId("paymentMethod");
+  const taxSelect = byId("taxRate");
+
+  return {
+    id: activeInvoiceId || crypto.randomUUID(),
+    jobNumber: byId("jobNumber").value,
+    invoiceDate: byId("todayDate").value,
+    dueDate: byId("dueDate").value,
+    businessName: byId("businessName").value.trim(),
+    clientName: byId("clientName").value.trim(),
+    billingAddress: byId("billingAddress").value.trim(),
+    cityStateZip: byId("cityStateZip").value.trim(),
+    phone: byId("phone").value.trim(),
+    email: byId("email").value.trim(),
+    services: collectServiceRows(),
+    taxRate: taxSelect.value,
+    taxLabel: taxSelect.options[taxSelect.selectedIndex].text,
+    paymentRate: paymentSelect.value,
+    paymentMethod: paymentSelect.options[paymentSelect.selectedIndex].text,
+    notes: byId("notes").value.trim(),
+    subtotal: totals.subtotal,
+    total: totals.total,
+    isDemo: false,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  };
+}
+
+function saveInvoice() {
+  const invoice = collectInvoice();
+  if (!invoice.clientName && !invoice.businessName) {
+    alert("Please enter a client name or business name before saving.");
     return;
   }
 
-  document.querySelectorAll("input, textarea").forEach(function (field) {
-    if (field.id !== "jobNumber") {
-      field.value = "";
-    }
-  });
+  const invoices = getSavedInvoices();
+  const existingIndex = invoices.findIndex((item) => item.id === invoice.id || item.jobNumber === invoice.jobNumber);
 
-  document.querySelectorAll("select").forEach(function (field) {
-    field.selectedIndex = 0;
-  });
-
-  const serviceRows = document.getElementById("serviceRows");
-  serviceRows.innerHTML = "";
-  serviceRowCount = 0;
-
-  for (let i = 0; i < startingServiceRows; i++) {
-    createServiceRow();
+  if (existingIndex >= 0) {
+    invoice.id = invoices[existingIndex].id;
+    invoice.createdAt = invoices[existingIndex].createdAt || invoice.createdAt;
+    invoice.isDemo = Boolean(invoices[existingIndex].isDemo);
+    invoices[existingIndex] = invoice;
+  } else {
+    invoices.push(invoice);
   }
 
+  storeInvoices(invoices);
+  activeInvoiceId = invoice.id;
+  showEditingBanner(invoice.jobNumber);
+  alert(existingIndex >= 0 ? "Invoice updated successfully." : "Invoice saved successfully.");
+  renderInvoiceList();
+}
+
+function clearInvoiceFields() {
+  ["dueDate", "businessName", "clientName", "billingAddress", "cityStateZip", "phone", "email", "notes"].forEach((id) => {
+    byId(id).value = "";
+  });
+  byId("taxRate").selectedIndex = 0;
+  byId("paymentMethod").selectedIndex = 0;
+  resetServiceRows();
   calculateTotals();
 }
 
-function setTodayDate() {
-  const todayField = document.getElementById("todayDate");
-  if (!todayField) return;
+function newInvoice() {
+  if (!confirm("Start a new invoice? Any unsaved changes will be cleared.")) return;
+
+  activeInvoiceId = null;
+  clearInvoiceFields();
+  byId("jobNumber").value = generateJobNumber();
+  byId("todayDate").value = getLocalDateString();
+  hideEditingBanner();
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function resetCurrentInvoice() {
+  if (!confirm("Clear the current invoice? The job number will not change.")) return;
+  clearInvoiceFields();
+  byId("todayDate").value = getLocalDateString();
+}
+
+function showEditingBanner(jobNumber) {
+  byId("editingJobNumber").textContent = jobNumber;
+  byId("editingBanner").hidden = false;
+}
+
+function hideEditingBanner() {
+  byId("editingBanner").hidden = true;
+  byId("editingJobNumber").textContent = "";
+}
+
+function loadInvoice(invoiceId) {
+  const invoice = getSavedInvoices().find((item) => item.id === invoiceId);
+  if (!invoice) {
+    alert("That invoice could not be found.");
+    renderInvoiceList();
+    return;
+  }
+
+  activeInvoiceId = invoice.id;
+  byId("jobNumber").value = invoice.jobNumber || "";
+  byId("todayDate").value = invoice.invoiceDate || "";
+  byId("dueDate").value = invoice.dueDate || "";
+  byId("businessName").value = invoice.businessName || "";
+  byId("clientName").value = invoice.clientName || "";
+  byId("billingAddress").value = invoice.billingAddress || "";
+  byId("cityStateZip").value = invoice.cityStateZip || "";
+  byId("phone").value = invoice.phone || "";
+  byId("email").value = invoice.email || "";
+  byId("taxRate").value = String(invoice.taxRate ?? "0");
+  byId("paymentMethod").value = String(invoice.paymentRate ?? "0");
+  byId("notes").value = invoice.notes || "";
+  resetServiceRows(invoice.services || []);
+  calculateTotals();
+  showEditingBanner(invoice.jobNumber);
+  closeInvoiceFinder();
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function deleteInvoice(event, invoiceId) {
+  event.stopPropagation();
+  const invoices = getSavedInvoices();
+  const invoice = invoices.find((item) => item.id === invoiceId);
+  if (!invoice) return;
+
+  if (!confirm(`Delete invoice ${invoice.jobNumber}? This cannot be undone.`)) return;
+
+  storeInvoices(invoices.filter((item) => item.id !== invoiceId));
+  if (activeInvoiceId === invoiceId) {
+    activeInvoiceId = null;
+    hideEditingBanner();
+  }
+  renderInvoiceList();
+}
+
+function openInvoiceFinder() {
+  byId("invoiceFinderModal").hidden = false;
+  byId("invoiceSearch").value = "";
+  renderInvoiceList();
+  setTimeout(() => byId("invoiceSearch").focus(), 0);
+}
+
+function closeInvoiceFinder() {
+  byId("invoiceFinderModal").hidden = true;
+}
+
+function searchableInvoiceText(invoice) {
+  return [
+    invoice.jobNumber,
+    invoice.invoiceDate,
+    invoice.dueDate,
+    invoice.clientName,
+    invoice.businessName,
+    invoice.billingAddress,
+    invoice.cityStateZip,
+    invoice.phone,
+    invoice.email,
+    invoice.notes,
+    ...(invoice.services || []).flatMap((service) => [service.date, service.address, service.service, service.amount])
+  ].join(" ").toLowerCase();
+}
+
+function renderInvoiceList() {
+  const list = byId("invoiceList");
+  if (!list) return;
+
+  const searchTerm = (byId("invoiceSearch")?.value || "").trim().toLowerCase();
+  const invoices = getSavedInvoices()
+    .filter((invoice) => !searchTerm || searchableInvoiceText(invoice).includes(searchTerm))
+    .sort((a, b) => new Date(b.invoiceDate || b.createdAt) - new Date(a.invoiceDate || a.createdAt));
+
+  list.innerHTML = "";
+  byId("emptyInvoiceMessage").hidden = invoices.length > 0;
+
+  invoices.forEach((invoice) => {
+    const row = document.createElement("button");
+    row.type = "button";
+    row.className = "invoice-row";
+    row.addEventListener("click", () => loadInvoice(invoice.id));
+
+    const customerDisplay = [invoice.clientName, invoice.businessName].filter(Boolean).join(" / ") || "No customer name";
+    row.innerHTML = `
+      <span class="invoice-job-number">${escapeHtml(invoice.jobNumber || "")}${invoice.isDemo ? '<small class="demo-label">DEMO</small>' : ""}</span>
+      <span>${escapeHtml(formatDisplayDate(invoice.invoiceDate))}</span>
+      <span class="invoice-customer">${escapeHtml(customerDisplay)}</span>
+      <span class="invoice-total">${formatMoney(invoice.total)}</span>
+      <span class="delete-dot" role="button" aria-label="Delete ${escapeHtml(invoice.jobNumber || "invoice")}" tabindex="0">●</span>
+    `;
+
+    const deleteDot = row.querySelector(".delete-dot");
+    deleteDot.addEventListener("click", (event) => deleteInvoice(event, invoice.id));
+    deleteDot.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") deleteInvoice(event, invoice.id);
+    });
+    list.appendChild(row);
+  });
+}
+
+function escapeHtml(value) {
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
+}
+
+function installDemoInvoices() {
+  const invoices = getSavedInvoices();
+  if (invoices.some((invoice) => invoice.isDemo)) {
+    alert("The five demo jobs are already installed.");
+    return;
+  }
 
   const today = new Date();
-  todayField.value = today.toISOString().split("T")[0];
+  const demoCustomers = [
+    ["Maria Santos", "", "112 SE Ocean Blvd, Stuart, FL 34994", "Mow", 85],
+    ["James Walker", "Walker Rentals", "840 NW Federal Hwy, Stuart, FL 34994", "Hedge Trim", 165],
+    ["Linda Parker", "Seaside Villas HOA", "2250 NE Dixie Hwy, Jensen Beach, FL 34957", "Debris Removal", 240],
+    ["Robert Green", "", "601 SW Saint Lucie Cres, Stuart, FL 34994", "Land Clearing", 475],
+    ["Angela Morris", "Treasure Coast Realty", "3101 SE Federal Hwy, Stuart, FL 34997", "Mow", 120]
+  ];
+
+  const demos = demoCustomers.map((item, index) => {
+    const date = new Date(today);
+    date.setDate(today.getDate() - index);
+    const invoiceDate = getLocalDateString(date);
+    return {
+      id: `paradise-demo-${index + 1}`,
+      jobNumber: `DEMO-PL-${String(index + 1).padStart(3, "0")}`,
+      invoiceDate,
+      dueDate: invoiceDate,
+      clientName: item[0],
+      businessName: item[1],
+      billingAddress: item[2],
+      cityStateZip: "Stuart, FL 34994",
+      phone: `772-555-01${String(index + 1).padStart(2, "0")}`,
+      email: `demo${index + 1}@example.com`,
+      services: [{ date: invoiceDate, address: item[2], service: item[3], amount: item[4] }],
+      taxRate: "0",
+      taxLabel: "No Tax",
+      paymentRate: "0",
+      paymentMethod: index % 2 === 0 ? "Cash" : "Business Check",
+      notes: "Demo invoice for training and testing.",
+      subtotal: item[4],
+      total: item[4],
+      isDemo: true,
+      createdAt: date.toISOString(),
+      updatedAt: date.toISOString()
+    };
+  });
+
+  storeInvoices([...invoices, ...demos]);
+  renderInvoiceList();
+  alert("Five demo jobs installed.");
 }
 
-document.getElementById("taxRate").addEventListener("change", calculateTotals);
-document.getElementById("paymentMethod").addEventListener("change", calculateTotals);
+function deleteDemoInvoices() {
+  const invoices = getSavedInvoices();
+  const demoCount = invoices.filter((invoice) => invoice.isDemo).length;
+  if (!demoCount) {
+    alert("There are no demo jobs to delete.");
+    return;
+  }
 
-for (let i = 0; i < startingServiceRows; i++) {
-  createServiceRow();
+  if (!confirm(`Delete all ${demoCount} demo jobs? Real invoices will not be affected.`)) return;
+  storeInvoices(invoices.filter((invoice) => !invoice.isDemo));
+  renderInvoiceList();
+  alert("Demo jobs deleted. Real invoices were not changed.");
 }
 
-setTodayDate();
-generateJobNumber();
-calculateTotals();
+function initializeApp() {
+  byId("taxRate").addEventListener("change", calculateTotals);
+  byId("paymentMethod").addEventListener("change", calculateTotals);
+  byId("invoiceSearch").addEventListener("input", renderInvoiceList);
+  byId("invoiceFinderModal").addEventListener("click", (event) => {
+    if (event.target === byId("invoiceFinderModal")) closeInvoiceFinder();
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && !byId("invoiceFinderModal").hidden) closeInvoiceFinder();
+  });
+
+  resetServiceRows();
+  byId("todayDate").value = getLocalDateString();
+  byId("jobNumber").value = generateJobNumber();
+  calculateTotals();
+}
+
+initializeApp();

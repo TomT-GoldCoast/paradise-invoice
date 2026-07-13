@@ -5,6 +5,10 @@ body {
   padding: 20px;
 }
 
+body:has(.modal:not([hidden])) {
+  overflow: hidden;
+}
+
 .app {
   max-width: 1000px;
   margin: auto;
@@ -57,6 +61,28 @@ body {
   font-size: 18px;
 }
 
+.editing-banner {
+  margin: 12px 0;
+  padding: 12px 16px;
+  background: #fff4df;
+  color: #8a4b00;
+  border: 2px solid #f07c00;
+  border-radius: 9px;
+  text-align: center;
+  font-size: 18px;
+}
+
+.action-bar {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.action-bar button {
+  flex: 1 1 180px;
+}
+
 .section {
   margin-top: 12px;
   padding: 10px;
@@ -80,13 +106,18 @@ label {
 input,
 select,
 textarea {
-    width: 100%;
-    padding: 7px;
-    margin-top: 2px;
-    font-size: 15px;
+  width: 100%;
+  padding: 10px;
+  margin-top: 2px;
+  font-size: 16px;
   box-sizing: border-box;
   border: 1px solid #bfcdbf;
   border-radius: 6px;
+}
+
+#jobNumber {
+  font-weight: bold;
+  background: #f4f4f4;
 }
 
 .row {
@@ -126,7 +157,8 @@ textarea {
   text-align: right;
 }
 
-.small-note {
+.small-note,
+.finder-note {
   color: #666;
   font-size: 14px;
   margin-bottom: 0;
@@ -153,70 +185,178 @@ textarea {
 }
 
 button {
+  min-height: 46px;
   padding: 12px 22px;
   font-size: 16px;
+  font-weight: bold;
   background: #2f7d32;
   color: white;
   border: none;
   border-radius: 7px;
   cursor: pointer;
+  touch-action: manipulation;
 }
 
-button:hover {
+button:hover,
+button:focus-visible {
   background: #256428;
 }
 
-@media (max-width: 700px) {
-  body {
-    padding: 8px;
-  }
+.secondary-button {
+  background: #637363;
+}
 
-  .app {
-    padding: 14px;
-  }
+.danger-button {
+  background: #a92828;
+}
 
-  .header {
-    flex-direction: column;
-    text-align: center;
-  }
+.danger-button:hover,
+.danger-button:focus-visible {
+  background: #861f1f;
+}
 
-  .logo {
-    width: 190px;
-    max-width: 80%;
-  }
+.modal[hidden] {
+  display: none;
+}
 
-  .company-info h1 {
-    font-size: 30px;
-  }
+.modal {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.58);
+}
 
-  .company-info h2 {
-    font-size: 19px;
-  }
+.modal-card {
+  width: min(960px, 100%);
+  max-height: 90vh;
+  overflow: auto;
+  background: white;
+  border: 3px solid #2f7d32;
+  border-radius: 14px;
+  padding: 18px;
+  box-shadow: 0 10px 35px rgba(0,0,0,0.3);
+}
 
-  .row {
-    flex-direction: column;
-  }
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+}
 
-  .service-header {
-    flex-direction: column;
-    align-items: stretch;
-  }
+.modal-header h2 {
+  margin: 0;
+  color: #2f7d32;
+}
 
-  .service-labels {
-    display: none;
-  }
+.close-button {
+  min-width: 48px;
+  padding: 8px 14px;
+  font-size: 28px;
+  line-height: 1;
+  background: #637363;
+}
 
-  .service-row {
-    grid-template-columns: 1fr;
-    padding: 12px;
-    border: 1px solid #d7e8d7;
-    border-radius: 8px;
-    background: white;
-  }
+.finder-search {
+  margin: 16px 0 10px;
+  padding: 14px;
+  font-size: 17px;
+  border: 2px solid #2f7d32;
+}
 
-  .totals {
-    text-align: left;
-  }
+.demo-buttons {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.demo-buttons button {
+  flex: 1 1 220px;
+}
+
+.finder-headings,
+.invoice-row {
+  display: grid;
+  grid-template-columns: 1.35fr 0.85fr 2fr 0.8fr 48px;
+  gap: 10px;
+  align-items: center;
+}
+
+.finder-headings {
+  padding: 12px 10px 8px;
+  color: #2f7d32;
+  border-bottom: 2px solid #2f7d32;
+}
+
+.invoice-list {
+  margin-top: 4px;
+}
+
+.invoice-row {
+  width: 100%;
+  min-height: 58px;
+  padding: 10px;
+  margin: 0;
+  text-align: left;
+  color: #222;
+  background: white;
+  border-bottom: 1px solid #d7e8d7;
+  border-radius: 0;
+}
+
+.invoice-row:hover,
+.invoice-row:focus-visible {
+  color: #222;
+  background: #eef8ee;
+}
+
+.invoice-job-number {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-weight: 800;
+  color: #205d23;
+}
+
+.demo-label {
+  padding: 3px 5px;
+  color: #8a4b00;
+  background: #fff0d2;
+  border-radius: 4px;
+  font-size: 10px;
+}
+
+.invoice-total {
+  font-weight: bold;
+  text-align: right;
+}
+
+.delete-dot {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  color: #d52323;
+  font-size: 28px;
+  line-height: 1;
+  border-radius: 50%;
+}
+
+.delete-dot:hover,
+.delete-dot:focus-visible {
+  background: #ffe4e4;
+  outline: 2px solid #d52323;
+}
+
+.empty-message {
+  padding: 28px 10px;
+  text-align: center;
+  color: #666;
 }
 
 .grass {
@@ -237,8 +377,6 @@ button:hover {
   margin-right: -18px;
 }
 
-/* Paradise Lawn Maintenance Fun Animation */
-
 .yard-animation {
   position: fixed;
   left: 0;
@@ -255,13 +393,7 @@ button:hover {
   bottom: 0;
   width: 100%;
   height: 14px;
-  background: repeating-linear-gradient(
-    90deg,
-    #2f8f2f 0px,
-    #2f8f2f 6px,
-    #3faa3f 6px,
-    #3faa3f 12px
-  );
+  background: repeating-linear-gradient(90deg, #2f8f2f 0px, #2f8f2f 6px, #3faa3f 6px, #3faa3f 12px);
 }
 
 .yard-worker {
@@ -272,25 +404,47 @@ button:hover {
   transform: translateX(-120px);
 }
 
-.mower {
-  animation: yardMove 12s linear infinite;
-}
-
-.trimmer {
-  animation: yardMove 12s linear infinite;
-  animation-delay: 4s;
-}
-
-.blower {
-  animation: yardMove 12s linear infinite;
-  animation-delay: 8s;
-}
+.mower { animation: yardMove 12s linear infinite; }
+.trimmer { animation: yardMove 12s linear infinite; animation-delay: 4s; }
+.blower { animation: yardMove 12s linear infinite; animation-delay: 8s; }
 
 @keyframes yardMove {
-  from {
-    transform: translateX(-140px);
+  from { transform: translateX(-140px); }
+  to { transform: translateX(calc(100vw + 140px)); }
+}
+
+@media (max-width: 700px) {
+  body { padding: 8px; }
+  .app { padding: 14px; }
+  .header { flex-direction: column; text-align: center; }
+  .logo { width: 190px; max-width: 80%; }
+  .company-info h1 { font-size: 30px; white-space: normal; }
+  .company-info h2 { font-size: 19px; }
+  .row { flex-direction: column; }
+  .action-bar { position: sticky; top: 0; z-index: 20; padding: 8px; background: rgba(255,255,255,0.96); border-bottom: 1px solid #d7e8d7; }
+  .action-bar button { flex: 1 1 100%; }
+  .service-header { flex-direction: column; align-items: stretch; }
+  .service-labels { display: none; }
+  .service-row { grid-template-columns: 1fr; padding: 12px; border: 1px solid #d7e8d7; border-radius: 8px; background: white; }
+  .totals { text-align: left; }
+  .modal { padding: 6px; align-items: stretch; }
+  .modal-card { max-height: none; border-radius: 10px; padding: 12px; }
+  .finder-headings { display: none; }
+  .invoice-row {
+    grid-template-columns: 1fr auto 48px;
+    grid-template-areas:
+      "job total delete"
+      "date total delete"
+      "customer customer delete";
+    gap: 4px 10px;
+    min-height: 86px;
+    border: 1px solid #d7e8d7;
+    border-radius: 8px;
+    margin-bottom: 8px;
   }
-  to {
-    transform: translateX(calc(100vw + 140px));
-  }
+  .invoice-job-number { grid-area: job; }
+  .invoice-row > span:nth-child(2) { grid-area: date; }
+  .invoice-customer { grid-area: customer; }
+  .invoice-total { grid-area: total; }
+  .delete-dot { grid-area: delete; }
 }

@@ -9,7 +9,6 @@
 
 <body>
   <div class="app">
-
     <div class="header">
       <img src="images/logo.png" alt="Paradise Lawn Care Logo" class="logo">
 
@@ -20,16 +19,26 @@
         <p>✉ ParadiseLawncare772@gmail.com</p>
         <p>📍 5685 SE Ault Ave., Suite 1<br>Stuart, FL 34997</p>
       </div>
-      <div class="grass">
-    <img src="images/grass.png" alt="Grass">
-</div>
 
+      <div class="grass">
+        <img src="images/grass.png" alt="Grass">
+      </div>
+    </div>
+
+    <div id="editingBanner" class="editing-banner" hidden>
+      Editing Invoice: <strong id="editingJobNumber"></strong>
+    </div>
+
+    <div class="action-bar">
+      <button type="button" onclick="newInvoice()">New Invoice</button>
+      <button type="button" onclick="saveInvoice()">Save Invoice</button>
+      <button type="button" onclick="openInvoiceFinder()">Invoice Finder</button>
     </div>
 
     <div class="section row">
       <div>
         <label>Job Number</label>
-        <input id="jobNumber" value="PL-2607-00001">
+        <input id="jobNumber" readonly>
       </div>
 
       <div>
@@ -61,12 +70,12 @@
       <div class="row">
         <div>
           <label>Phone</label>
-          <input id="phone">
+          <input id="phone" inputmode="tel">
         </div>
 
         <div>
           <label>Email</label>
-          <input id="email">
+          <input id="email" inputmode="email">
         </div>
       </div>
     </div>
@@ -85,7 +94,6 @@
       </div>
 
       <div id="serviceRows"></div>
-
       <p class="small-note">Starts with 5 service lines. Maximum 20.</p>
     </div>
 
@@ -120,18 +128,46 @@
     </div>
 
     <div class="buttons">
-      <button type="button" onclick="resetForm()">Reset</button>
+      <button type="button" class="secondary-button" onclick="resetCurrentInvoice()">Reset Current Invoice</button>
     </div>
+  </div>
 
+  <div id="invoiceFinderModal" class="modal" hidden>
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="finderTitle">
+      <div class="modal-header">
+        <h2 id="finderTitle">Paradise Invoice Finder</h2>
+        <button type="button" class="close-button" onclick="closeInvoiceFinder()" aria-label="Close Invoice Finder">×</button>
+      </div>
+
+      <input id="invoiceSearch" class="finder-search" type="search" placeholder="Search job number, customer, business, date, phone, city, service...">
+
+      <div class="demo-buttons">
+        <button type="button" onclick="installDemoInvoices()">Install 5 Demo Jobs</button>
+        <button type="button" class="danger-button" onclick="deleteDemoInvoices()">Delete Demo Jobs</button>
+      </div>
+
+      <p class="finder-note">Tap any invoice once to open it. Tap the red dot to delete it.</p>
+
+      <div class="finder-headings">
+        <strong>Job Number</strong>
+        <strong>Date</strong>
+        <strong>Customer / Business</strong>
+        <strong>Total</strong>
+        <span></span>
+      </div>
+
+      <div id="invoiceList" class="invoice-list"></div>
+      <p id="emptyInvoiceMessage" class="empty-message" hidden>No saved invoices found.</p>
+    </div>
   </div>
 
   <script src="script.js"></script>
-  <div class="yard-animation">
-  <div class="grass-line"></div>
 
-  <div class="yard-worker mower">🚜</div>
-  <div class="yard-worker trimmer">🧍‍♂️🌿</div>
-  <div class="yard-worker blower">🧍‍♂️💨🍂</div>
-</div>
+  <div class="yard-animation">
+    <div class="grass-line"></div>
+    <div class="yard-worker mower">🚜</div>
+    <div class="yard-worker trimmer">🧍‍♂️🌿</div>
+    <div class="yard-worker blower">🧍‍♂️💨🍂</div>
+  </div>
 </body>
 </html>
