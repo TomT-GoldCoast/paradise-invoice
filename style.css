@@ -83,6 +83,15 @@ body:has(.modal:not([hidden])) {
   flex: 1 1 180px;
 }
 
+.pdf-button {
+  background: #f07c00;
+}
+
+.pdf-button:hover,
+.pdf-button:focus-visible {
+  background: #c86600;
+}
+
 .section {
   margin-top: 12px;
   padding: 10px;

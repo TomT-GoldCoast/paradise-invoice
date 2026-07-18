@@ -185,11 +185,11 @@ function collectInvoice() {
   };
 }
 
-function saveInvoice() {
+function persistInvoice(showConfirmation = true) {
   const invoice = collectInvoice();
   if (!invoice.clientName && !invoice.businessName) {
     alert("Please enter a client name or business name before saving.");
-    return;
+    return null;
   }
 
   const invoices = getSavedInvoices();
@@ -207,8 +207,180 @@ function saveInvoice() {
   storeInvoices(invoices);
   activeInvoiceId = invoice.id;
   showEditingBanner(invoice.jobNumber);
-  alert(existingIndex >= 0 ? "Invoice updated successfully." : "Invoice saved successfully.");
   renderInvoiceList();
+  if (showConfirmation) {
+    alert(existingIndex >= 0 ? "Invoice updated successfully." : "Invoice saved successfully.");
+  }
+  return invoice;
+}
+
+function saveInvoice() {
+  persistInvoice(true);
+}
+
+function longDisplayDate(value) {
+  if (!value) return "";
+  const parts = value.split("-");
+  if (parts.length !== 3) return value;
+  return `${parts[1]}/${parts[2]}/${parts[0]}`;
+}
+
+function safePdfFilenamePart(value) {
+  return String(value || "Invoice")
+    .trim()
+    .replace(/[^a-zA-Z0-9_-]+/g, "-")
+    .replace(/^-+|-+$/g, "") || "Invoice";
+}
+
+function buildInvoicePrintHtml(invoice) {
+  const taxRate = Number(invoice.taxRate || 0);
+  const paymentRate = Number(invoice.paymentRate || 0);
+  const subtotal = Number(invoice.subtotal || 0);
+  const taxAmount = subtotal * taxRate;
+  const cardFee = (subtotal + taxAmount) * paymentRate;
+  const customerName = invoice.businessName || invoice.clientName || "Customer";
+  const logoUrl = new URL("images/logo.png", document.baseURI).href;
+  const grassUrl = new URL("images/grass.png", document.baseURI).href;
+
+  const serviceRows = (invoice.services || []).map((service) => `
+    <tr>
+      <td>${escapeHtml(longDisplayDate(service.date))}</td>
+      <td>${escapeHtml(service.address || "")}</td>
+      <td>${escapeHtml(service.service === "Select" ? "" : service.service || "")}</td>
+      <td class="money">${formatMoney(service.amount)}</td>
+    </tr>
+  `).join("") || '<tr><td colspan="4" class="empty-service">No service lines entered.</td></tr>';
+
+  return `<!DOCTYPE html>
+  <html lang="en">
+  <head>
+    <meta charset="UTF-8">
+    <title>${escapeHtml(invoice.jobNumber)}-${escapeHtml(safePdfFilenamePart(customerName))}</title>
+    <style>
+      @page { size: letter; margin: 0.42in; }
+      * { box-sizing: border-box; }
+      body { margin: 0; color: #202620; font-family: Arial, Helvetica, sans-serif; font-size: 11px; background: #fff; }
+      .invoice { min-height: 9.9in; border: 2px solid #2f7d32; border-radius: 10px; overflow: hidden; }
+      .header { position: relative; display: grid; grid-template-columns: 145px 1fr 175px; align-items: center; min-height: 145px; padding: 16px 18px 12px; border-bottom: 5px solid #2f7d32; overflow: hidden; }
+      .logo { width: 132px; max-height: 115px; object-fit: contain; }
+      .company { position: relative; z-index: 2; }
+      .company h1 { margin: 0 0 3px; color: #2f7d32; font-size: 25px; }
+      .tagline { margin: 0 0 10px; color: #f07c00; font-size: 14px; font-weight: bold; }
+      .company p { margin: 3px 0; font-size: 10.5px; }
+      .grass { position: absolute; right: -18px; bottom: -18px; width: 250px; opacity: 0.95; }
+      .invoice-title { position: relative; z-index: 2; align-self: start; text-align: right; }
+      .invoice-title h2 { margin: 0; color: #2f7d32; font-size: 29px; letter-spacing: 1.5px; }
+      .job-number { margin-top: 5px; color: #f07c00; font-size: 13px; font-weight: bold; }
+      .content { padding: 15px 18px 18px; }
+      .top-grid { display: grid; grid-template-columns: 1.45fr 0.85fr; gap: 22px; }
+      .section-title { margin: 0 0 7px; padding-bottom: 4px; color: #2f7d32; border-bottom: 2px solid #d7e8d7; font-size: 13px; text-transform: uppercase; letter-spacing: 0.7px; }
+      .bill-to strong { display: block; margin-bottom: 3px; font-size: 13px; }
+      .bill-to p { margin: 2px 0; line-height: 1.35; }
+      .dates { width: 100%; border-collapse: collapse; }
+      .dates th, .dates td { padding: 4px 0 4px 10px; text-align: right; }
+      .dates th { color: #536153; }
+      .services { width: 100%; margin-top: 16px; border-collapse: collapse; table-layout: fixed; }
+      .services th { padding: 8px 7px; color: white; background: #2f7d32; text-align: left; font-size: 10px; text-transform: uppercase; }
+      .services td { min-height: 28px; padding: 7px; border-bottom: 1px solid #d7e8d7; vertical-align: top; word-wrap: break-word; }
+      .services tbody tr:nth-child(even) { background: #f6faf6; }
+      .services th:nth-child(1) { width: 15%; }
+      .services th:nth-child(2) { width: 42%; }
+      .services th:nth-child(3) { width: 27%; }
+      .services th:nth-child(4) { width: 16%; text-align: right; }
+      .money { text-align: right; white-space: nowrap; }
+      .empty-service { color: #777; text-align: center; font-style: italic; }
+      .bottom-grid { display: grid; grid-template-columns: 1.3fr 0.7fr; gap: 26px; margin-top: 16px; }
+      .notes { min-height: 80px; padding: 9px; border: 1px solid #d7e8d7; border-radius: 6px; white-space: pre-wrap; line-height: 1.4; }
+      .payment { margin: 10px 0 0; color: #536153; }
+      .totals { width: 100%; border-collapse: collapse; }
+      .totals td { padding: 5px 0 5px 10px; }
+      .totals td:last-child { text-align: right; font-weight: bold; }
+      .grand-total td { padding-top: 9px; color: #2f7d32; border-top: 2px solid #2f7d32; font-size: 16px; font-weight: bold; }
+      .thank-you { margin: 18px 0 0; color: #f07c00; text-align: center; font-size: 14px; font-weight: bold; }
+      .print-help { padding: 10px; color: white; background: #334733; text-align: center; font-size: 13px; }
+      .print-help button { margin-left: 10px; padding: 7px 14px; color: white; background: #2f7d32; border: 1px solid white; border-radius: 5px; font-weight: bold; cursor: pointer; }
+      @media print {
+        .print-help { display: none; }
+        .invoice { min-height: auto; }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="print-help">Choose <strong>Save as PDF</strong> in the print window. <button onclick="window.print()">Print / Save PDF</button></div>
+    <main class="invoice">
+      <header class="header">
+        <img class="logo" src="${escapeHtml(logoUrl)}" alt="Paradise Lawn Care logo">
+        <div class="company">
+          <h1>Paradise Lawn Care, LLC</h1>
+          <p class="tagline">We Make Your Lawn Paradise Perfect.</p>
+          <p>772-323-9401 &nbsp; | &nbsp; ParadiseLawncare772@gmail.com</p>
+          <p>5685 SE Ault Ave., Suite 1, Stuart, FL 34997</p>
+        </div>
+        <img class="grass" src="${escapeHtml(grassUrl)}" alt="">
+        <div class="invoice-title">
+          <h2>INVOICE</h2>
+          <div class="job-number">${escapeHtml(invoice.jobNumber)}</div>
+        </div>
+      </header>
+      <div class="content">
+        <section class="top-grid">
+          <div class="bill-to">
+            <h3 class="section-title">Bill To</h3>
+            ${invoice.businessName ? `<strong>${escapeHtml(invoice.businessName)}</strong>` : ""}
+            ${invoice.clientName ? `<p>${escapeHtml(invoice.clientName)}</p>` : ""}
+            ${invoice.billingAddress ? `<p>${escapeHtml(invoice.billingAddress)}</p>` : ""}
+            ${invoice.cityStateZip ? `<p>${escapeHtml(invoice.cityStateZip)}</p>` : ""}
+            ${invoice.phone ? `<p>${escapeHtml(invoice.phone)}</p>` : ""}
+            ${invoice.email ? `<p>${escapeHtml(invoice.email)}</p>` : ""}
+          </div>
+          <table class="dates">
+            <tr><th>Invoice Date</th><td>${escapeHtml(longDisplayDate(invoice.invoiceDate))}</td></tr>
+            <tr><th>Due Date</th><td>${escapeHtml(longDisplayDate(invoice.dueDate))}</td></tr>
+            <tr><th>Payment</th><td>${escapeHtml(invoice.paymentMethod || "")}</td></tr>
+          </table>
+        </section>
+        <table class="services">
+          <thead><tr><th>Date</th><th>Service Address</th><th>Service</th><th>Amount</th></tr></thead>
+          <tbody>${serviceRows}</tbody>
+        </table>
+        <section class="bottom-grid">
+          <div>
+            <h3 class="section-title">Notes</h3>
+            <div class="notes">${escapeHtml(invoice.notes || "Thank you for choosing Paradise Lawn Care.")}</div>
+            <p class="payment"><strong>Payment Method:</strong> ${escapeHtml(invoice.paymentMethod || "Not selected")}</p>
+          </div>
+          <table class="totals">
+            <tr><td>Subtotal</td><td>${formatMoney(subtotal)}</td></tr>
+            ${taxRate > 0 ? `<tr><td>Tax (${(taxRate * 100).toFixed(1)}%)</td><td>${formatMoney(taxAmount)}</td></tr>` : ""}
+            ${paymentRate > 0 ? `<tr><td>Card Fee (${(paymentRate * 100).toFixed(1)}%)</td><td>${formatMoney(cardFee)}</td></tr>` : ""}
+            <tr class="grand-total"><td>Total</td><td>${formatMoney(invoice.total)}</td></tr>
+          </table>
+        </section>
+        <p class="thank-you">Thank you for allowing us to make your lawn Paradise Perfect!</p>
+      </div>
+    </main>
+  </body>
+  </html>`;
+}
+
+function saveAndCreatePDF() {
+  const printWindow = window.open("", "_blank");
+  if (!printWindow) {
+    alert("Please allow pop-ups for this page so the invoice PDF can open.");
+    return;
+  }
+
+  const invoice = persistInvoice(false);
+  if (!invoice) {
+    printWindow.close();
+    return;
+  }
+
+  printWindow.document.open();
+  printWindow.document.write(buildInvoicePrintHtml(invoice));
+  printWindow.document.close();
+  printWindow.focus();
+  setTimeout(() => printWindow.print(), 650);
 }
 
 function clearInvoiceFields() {
