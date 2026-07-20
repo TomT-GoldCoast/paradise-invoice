@@ -21,6 +21,11 @@ function formatMoney(value) {
   return "$" + Number(value || 0).toFixed(2);
 }
 
+function normalizeService(value) {
+  const service = String(value || "Select");
+  return ["Mow", "Weed Eat", "Edge", "Blow"].includes(service) ? "Full Service" : service;
+}
+
 function getLocalDateString(date = new Date()) {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
@@ -84,10 +89,7 @@ function createServiceRow(data = {}) {
     <input type="text" class="service-address" placeholder="Service Address" aria-label="Service address">
     <select class="service-select" aria-label="Service performed">
       <option>Select</option>
-      <option>Mow</option>
-      <option>Weed Eat</option>
-      <option>Edge</option>
-      <option>Blow</option>
+      <option>Full Service</option>
       <option>Hedge Trim</option>
       <option>Debris Removal</option>
       <option>Land Clearing</option>
@@ -99,7 +101,7 @@ function createServiceRow(data = {}) {
 
   row.querySelector(".service-date").value = data.date || "";
   row.querySelector(".service-address").value = data.address || "";
-  row.querySelector(".service-select").value = data.service || "Select";
+  row.querySelector(".service-select").value = normalizeService(data.service);
   row.querySelector(".amount").value = data.amount ? formatMoney(data.amount) : "";
 
   const amountField = row.querySelector(".amount");
@@ -246,7 +248,7 @@ function buildInvoicePrintHtml(invoice) {
     <tr>
       <td>${escapeHtml(longDisplayDate(service.date))}</td>
       <td>${escapeHtml(service.address || "")}</td>
-      <td>${escapeHtml(service.service === "Select" ? "" : service.service || "")}</td>
+      <td>${escapeHtml(normalizeService(service.service) === "Select" ? "" : normalizeService(service.service))}</td>
       <td class="money">${formatMoney(service.amount)}</td>
     </tr>
   `).join("") || '<tr><td colspan="4" class="empty-service">No service lines entered.</td></tr>';
@@ -545,11 +547,11 @@ function installDemoInvoices() {
 
   const today = new Date();
   const demoCustomers = [
-    ["Maria Santos", "", "112 SE Ocean Blvd, Stuart, FL 34994", "Mow", 85],
+    ["Maria Santos", "", "112 SE Ocean Blvd, Stuart, FL 34994", "Full Service", 85],
     ["James Walker", "Walker Rentals", "840 NW Federal Hwy, Stuart, FL 34994", "Hedge Trim", 165],
     ["Linda Parker", "Seaside Villas HOA", "2250 NE Dixie Hwy, Jensen Beach, FL 34957", "Debris Removal", 240],
     ["Robert Green", "", "601 SW Saint Lucie Cres, Stuart, FL 34994", "Land Clearing", 475],
-    ["Angela Morris", "Treasure Coast Realty", "3101 SE Federal Hwy, Stuart, FL 34997", "Mow", 120]
+    ["Angela Morris", "Treasure Coast Realty", "3101 SE Federal Hwy, Stuart, FL 34997", "Full Service", 120]
   ];
 
   const demos = demoCustomers.map((item, index) => {
